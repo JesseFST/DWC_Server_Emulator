@@ -37,7 +37,7 @@ logger_filename = "storage_server.log"
 logger = utils.create_logger(logger_name, logger_filename, -1, logger_output_to_console, logger_output_to_file)
 
 # Paths to ProxyPass: /SakeStorageServer, /SakeFileServer
-address = ("127.0.0.1", 8000)
+address = ("0.0.0.0", 8000)
 
 def escape_xml(s):
     s = s.replace( "&", "&amp;" )
@@ -671,8 +671,14 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 
                 # insert into database
                 cursor = self.server.db.cursor()
-                cursor.execute('INSERT INTO g1687_GhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE course = ?, time = ?', (gameid, playerid, courseid, regionid, score, courseid, score))
-                path = userdir + '/course-' + str(courseid) + '.mkwghost'
+                cursor.execute('INSERT OR REPLACE INTO g1687_GhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
+                
+                # get next fileid from database
+                fileid = cursor.lastrowid
+
+                # update fileid in database
+                path = userdir + '/' + str(fileid)
+                cursor.execute('UPDATE g1687_GhostData SET fileid = ? WHERE (profile = ? AND course = ?)', (fileid, playerid, courseid))
                 
                 with open(path, 'wb') as fi:
                     fi.write(data)

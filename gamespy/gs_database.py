@@ -232,7 +232,7 @@ class GamespyDatabase(object):
             enabled = 1
             zipcode = ""
             aim = ""
-            lastactive = datetime.datetime.now().time()
+            lastactive = ""
 
             # Hash password before entering it into the database.
             # For now I'm using a very simple MD5 hash.
@@ -242,9 +242,13 @@ class GamespyDatabase(object):
             password = md5.hexdigest()
 
             with Transaction(self.conn) as tx:
-                q = "INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-                tx.nonquery(q, (profileid, str(userid), password, gsbrcd, email, uniquenick, pid, lon, lat, loc, firstname, lastname, stat, partnerid, console, csnum, cfc, bssid, devname, birth, gameid, enabled, zipcode, aim, lastactive))
-
+                q = "INSERT INTO users VALUES" \
+                    " (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                tx.nonquery(q, (profileid, str(userid), password, gsbrcd,
+                                email, uniquenick, pid, lon, lat, loc,
+                                firstname, lastname, stat, partnerid,
+                                console, csnum, cfc, bssid, devname, birth,
+                                gameid, enabled, zipcode, aim, lastactive))
             return profileid
         return None
 
@@ -266,14 +270,18 @@ class GamespyDatabase(object):
             birth = ""
             zipcode = ""
             aim = ""
-            lastactive = datetime.datetime.now().time()
+            lastactive = ""
 
             enabled = 1
 
             with Transaction(self.conn) as tx:
-                q = "INSERT INTO users VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
-                tx.nonquery(q, (profileid, str(userid), password, gsbrcd, email, uniquenick, pid, lon, lat, loc, firstname, lastname, stat, partnerid, console, csnum, cfc, bssid, devname, birth, gameid, enabled, zipcode, aim, lastactive))
-
+                q = "INSERT INTO users VALUES" \
+                    " (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+                tx.nonquery(q, (profileid, str(userid), password, gsbrcd,
+                                email, uniquenick, pid, lon, lat, loc,
+                                firstname, lastname, stat, partnerid,
+                                console, csnum, cfc, bssid, devname, birth,
+                                gameid, enabled, zipcode, aim, lastactive))
             return profileid
 
     def get_user_list(self):
@@ -493,6 +501,7 @@ class GamespyDatabase(object):
              result = int(row[0])
              if result > 2:
                 tx.nonquery("UPDATE consoles SET abuse = 1 WHERE csnum = ?", (postdata['csnum'],))
+                return True
              else:
                 return False
              
