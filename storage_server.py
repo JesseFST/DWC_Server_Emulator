@@ -1,23 +1,20 @@
-"""DWC Network Server Emulator
-
-    Copyright (C) 2014 polaris-
-    Copyright (C) 2014 AdmiralCurtiss
-    Copyright (C) 2014 msoucy
-    Copyright (C) 2018 Sepalani
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as
-    published by the Free Software Foundation, either version 3 of the
-    License, or (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
+#    DWC Network Server Emulator
+#    Copyright (C) 2014 polaris-
+#    Copyright (C) 2014 AdmiralCurtiss
+#    Copyright (C) 2014 msoucy
+#
+#    This program is free software: you can redistribute it and/or modify
+#    it under the terms of the GNU Affero General Public License as
+#    published by the Free Software Foundation, either version 3 of the
+#    License, or (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU Affero General Public License for more details.
+#
+#    You should have received a copy of the GNU Affero General Public License
+#    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
 import random
@@ -30,14 +27,17 @@ import xml.dom.minidom as minidom
 
 import other.utils as utils
 import gamespy.gs_database as gs_database
-import dwc_config
 
 from io import BytesIO
 
-# Paths to ProxyPass: /SakeStorageServer, /SakeFileServer
-logger = dwc_config.get_logger('StorageServer')
-address = dwc_config.get_ip_port('StorageServer')
+logger_output_to_console = True
+logger_output_to_file = True
+logger_name = "StorageServer"
+logger_filename = "storage_server.log"
+logger = utils.create_logger(logger_name, logger_filename, -1, logger_output_to_console, logger_output_to_file)
 
+# Paths to ProxyPass: /SakeStorageServer, /SakeFileServer
+address = ("127.0.0.1", 8000)
 
 def escape_xml(s):
     s = s.replace( "&", "&amp;" )
@@ -47,13 +47,11 @@ def escape_xml(s):
     s = s.replace( ">", "&gt;" )
     return s
 
-
 class StorageServer(object):
     def start(self):
         httpd = StorageHTTPServer((address[0], address[1]), StorageHTTPServerHandler)
         logger.log(logging.INFO, "Now listening for connections on %s:%d...", address[0], address[1])
         httpd.serve_forever()
-
 
 class StorageHTTPServer(BaseHTTPServer.HTTPServer):
     def __init__(self, server_address, RequestHandlerClass):
@@ -97,12 +95,18 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
             ['recordid', 'ownerid', 'info'      ],
             [PK,         'INT',     'TEXT'      ],
             ['int',      'int',     'binaryData'])
-
+			
         self.create_or_alter_table_if_not_exists(
             'g1687_StoredGhostData',
             ['recordid', 'fileid', 'profile', 'region', 'gameid', 'course' ],
             [PK,         'INT',    'INT',     'INT',    'INT',    'INT'    ],
             ['int',      'int',    'int',     'int',    'int',    'int'    ])
+			
+        self.create_or_alter_table_if_not_exists(
+            'g1687_GhostData',
+            ['fileid', 'gameid', 'profile', 'course', 'region', 'time' ],
+            ['INT',    'INT',     'INT',    'INT',    'INT',    'INT'    ],
+            ['int',    'int',     'int',    'int',    'int',    'int'    ])
 
         # WarioWare DIY
         self.create_or_alter_table_if_not_exists(
@@ -150,7 +154,8 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
             ['recordid', 'song_name',   'creator_name', 'average_rating', 'serialid', 'filestore', 'is_lyric', 'num_ratings', 'song_code',   'artist_name'],
             [PK,         'TEXT',        'TEXT',         'REAL',           'INT',      'INT',       'INT',      'INT',         'TEXT',        'TEXT'       ],
             ['int',      'asciiString', 'asciiString',  'float',          'int',      'int',       'boolean',  'int',         'asciiString', 'asciiString'])
-
+			
+			
         # Playground
         self.create_or_alter_table_if_not_exists(
             'g2999_tblRegionInfo',
@@ -172,6 +177,35 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
             ['int',      'int',     'int']
         )
 
+        # Trackmania Wii
+        self.create_or_alter_table_if_not_exists(
+            'g2793_player',
+            ['recordid', 'ownerid', 'ladder', 'avatar', 'mii', 'name',        'wins', 'loses', 'count', 'row'],
+            [PK,         'INT',     'INT',    'INT',    'INT', 'TEXT',        'INT',  'INT',   'INT',   'INT'],
+            ['int',      'int',     'int',    'int',    'int', 'asciiString', 'int',  'int',   'int',   'int']
+        )
+
+        self.create_or_alter_table_if_not_exists(
+            'g2793_solo',
+            ['recordid', 'ownerid', 'trackID', 'time',  'ghostID', 'ghostTime', 'date', 'ghostSize', 'row'],
+            [PK,         'INT',     'INT',     'REAL',  'INT',     'REAL',      'INT',  'INT',       'INT'],
+            ['int',      'int',     'int',     'float', 'int',     'float',     'int',  'int',       'int']
+        )
+
+        self.create_or_alter_table_if_not_exists(
+            'g2793_custom',
+            ['recordid', 'ownerid', 'name',        'author',      'date', 'env', 'trackFile', 'trackSize', 'goldFile', 'goldSize', 'silverFile', 'silverSize', 'bronzeFile', 'bronzeSize', 'isValidated'],
+            [PK,         'INT',     'TEXT',        'TEXT',        'INT',  'INT', 'INT',       'INT',       'INT',      'INT',      'INT',        'INT',        'INT',        'INT',        'INT'],
+            ['int',      'int',     'asciiString', 'asciiString', 'int',  'int', 'int',       'int',       'int',      'int',      'int',        'int',        'int',        'int',        'int']
+        )
+
+        self.create_or_alter_table_if_not_exists(
+            'g2793_customDLC',
+            ['recordid', 'ownerid', 'name',        'author',      'date', 'env', 'trackFile', 'trackSize', 'goldFile', 'goldSize', 'silverFile', 'silverSize', 'bronzeFile', 'bronzeSize', 'isValidated', 'isDLC'],
+            [PK,         'INT',     'TEXT',        'TEXT',        'INT',  'INT', 'INT',       'INT',       'INT',      'INT',      'INT',        'INT',        'INT',        'INT',        'INT',         'INT'],
+            ['int',      'int',     'asciiString', 'asciiString', 'int',  'int', 'int',       'int',       'int',      'int',      'int',        'int',        'int',        'int',        'int',         'int']
+        )
+            
         # load column info into memory, unfortunately there's no simple way
         # to check for column-existence so get that data in advance
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table'")
@@ -224,14 +258,10 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
         except TypeError:
             return 'UNKNOWN'
 
-
 class IllegalColumnAccessException(Exception):
     pass
-
-
 class FilterSyntaxException(Exception):
     pass
-
     
 class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     def confirm_columns(self, columndata, table):
@@ -590,7 +620,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 logger.log(logging.ERROR, "Failed to read data")
                 fileid = 0
                 retcode = 1
-
+            
             self.send_response(200)
 
             if retcode == 0:
@@ -600,6 +630,70 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             self.end_headers()
             
             logger.log(logging.DEBUG, "SakeFileServer Upload Reply Sake-File-Id %s (%d bytes)", fileid, filesize)
+            self.wfile.write('')
+
+        elif self.path.startswith("/SakeFileServer/ghostupload.aspx?"):
+            retcode = 0
+            params = urlparse.parse_qs(self.path[self.path.find('?')+1:])
+
+            gameid = int(params['gameid'][0])
+            regionid = int(params['regionid'][0])
+            courseid = int(params['courseid'][0])
+            score = int(params['score'][0])
+            playerid = int(params['pid'][0])
+            playerinfo = str(params['playerinfo'][0])
+            
+            logger.log(logging.DEBUG, "SakeFileServer MKW GhostUpload Request for profile %s on course %s, in region %s, time %s", playerid, courseid, regionid, score)
+            
+            ctype, pdict = cgi.parse_header(self.headers['Content-Type'])
+            multipart_data = self.rfile.read(int(self.headers.get('Content-Length', -1)))
+            filedata = cgi.parse_multipart(BytesIO(multipart_data), pdict)
+            data = filedata.get('data')
+            if data is not None:
+                data = data[0]
+            else:
+                for key in filedata:
+                    if not filedata[key]:
+                        continue
+                    data = filedata[key][0]
+                    break
+            filesize = -1 if data is None else len(data)
+            
+            # make sure users don't upload huge files, dunno what an actual sensible maximum is
+            # but 64 KB seems reasonable for what I've seen in WarioWare
+            if data is not None and filesize <= 65536:
+                # Apparently the real Sake doesn't care about the gameid/playerid, just the fileid
+                # but for better categorization I think I'm still gonna leave folder-per-game/player thing
+
+                userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
+                if not os.path.exists(userdir):
+                    os.makedirs(userdir)
+                
+                # insert into database
+                cursor = self.server.db.cursor()
+                cursor.execute('INSERT INTO g1687_GhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?) ON DUPLICATE KEY UPDATE course = ?, time = ?', (gameid, playerid, courseid, regionid, score, courseid, score))
+                path = userdir + '/course-' + str(courseid) + '.mkwghost'
+                
+                with open(path, 'wb') as fi:
+                    fi.write(data)
+            elif data is not None:
+                logger.log(logging.WARNING, "Tried to upload big file, rejected. (%s bytes)", filesize)
+                fileid = 0
+                retcode = 1
+            else:
+                logger.log(logging.ERROR, "Failed to read data")
+                fileid = 0
+                retcode = 1
+
+            self.send_response(200)
+
+            if retcode == 0:
+                self.send_header('Sake-File-Id', str(fileid))
+
+            self.send_header('Sake-File-Result', str(retcode))
+            self.end_headers()
+            
+            logger.log(logging.DEBUG, "SakeFileServer MKW GhostUpload Reply Sake-File-Id %s (%d bytes)", fileid, filesize)
             self.wfile.write('')
 
         else:
