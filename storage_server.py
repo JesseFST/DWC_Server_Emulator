@@ -603,6 +603,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 
                 path = userdir + '/' + str(fileid)
                 cursor.execute('UPDATE filepaths SET path = ? WHERE fileid = ?', (path, fileid))
+                self.server.db.commit()
                 
                 with open(path, 'wb') as fi:
                     fi.write(data)
@@ -667,16 +668,13 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 cursor = self.server.db.cursor()
                 cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
                 fileid = 'p' + str(playerid) + 'c' + str(courseid)
-                logger.log(logging.DEBUG, "Writing to database .... File: %s", fileid)
 
                 # update fileid in database
                 cursor.execute('UPDATE g1687_StoredGhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
-                logger.log(logging.DEBUG, "Inserted ghostdata into DB!")
+                self.server.db.commit()
                 
-                logger.log(logging.DEBUG, "Writing ghostdata to filesystem .... %s", userdir + '/' + fileid)
                 with open(userdir + '/' + fileid, 'wb') as fi:
                     fi.write(data)
-                logger.log(logging.DEBUG, "Written ghostdata to filesystem (%s bytes)", filesize)
             elif data is not None:
                 logger.log(logging.WARNING, "Tried to upload big file, rejected. (%s bytes)", filesize)
                 fileid = 0
@@ -758,11 +756,12 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 playerid = int(params['p0'][0])
 
                 logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request for profile %s on course %s", playerid, courseid)
-
+                
                 cursor = self.server.db.cursor()
-                cursor.execute('SELECT fileid FROM g1687_StoredGhostData WHERE profile = ? AND course = ?', (playerid, courseid))
+                cursor.execute('SELECT time FROM g1687_StoredGhostData WHERE profile = ? AND course = ?', (playerid, courseid))
                 
                 try:
+                    time = cursor.fetchone()[0]
                     userdir = 'usercontent/' + str(gameid) + '/ghostdata/'
                     path = userdir + 'p' + str(playerid) + 'c' + str(courseid)
 
