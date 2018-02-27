@@ -98,15 +98,9 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
 			
         self.create_or_alter_table_if_not_exists(
             'g1687_StoredGhostData',
-            ['recordid', 'fileid', 'gameid', 'profile', 'course', 'region', 'time' ],
-            [PK,         'INT',    'INT',     'INT',    'INT',    'INT',    'INT'    ],
-            ['int',      'int',    'int',     'int',    'int',    'int',    'int'    ])
-			
-        self.create_or_alter_table_if_not_exists(
-            'g1687_GhostData',
-            ['fileid', 'gameid', 'profile', 'course', 'region', 'time' ],
-            ['INT',    'INT',     'INT',    'INT',    'INT',    'INT'    ],
-            ['int',    'int',     'int',    'int',    'int',    'int'    ])
+            ['recordid', 'fileid',           'gameid',  'profile', 'course', 'region', 'time' ],
+            [PK,         'TEXT',             'INT',     'INT',     'INT',    'INT',    'INT'  ],
+            ['int',      'unicodeString',    'int',     'int',     'int',    'int',    'int'  ])
 
         # WarioWare DIY
         self.create_or_alter_table_if_not_exists(
@@ -665,23 +659,24 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 # Apparently the real Sake doesn't care about the gameid/playerid, just the fileid
                 # but for better categorization I think I'm still gonna leave folder-per-game/player thing
 
-                userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
+                userdir = 'usercontent/' + str(gameid) + '/ghostdata'
                 if not os.path.exists(userdir):
                     os.makedirs(userdir)
                 
                 # insert into database
                 cursor = self.server.db.cursor()
                 cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
-                
-                # get next fileid from database
-                fileid = cursor.lastrowid
+                fileid = 'p' + str(playerid) + 'c' + str(courseid)
+                logger.log(logging.DEBUG, "Writing to database .... File: %s", fileid)
 
                 # update fileid in database
-                path = userdir + '/' + str(fileid)
-                cursor.execute('UPDATE g1687_GhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
+                cursor.execute('UPDATE g1687_StoredGhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
+                logger.log(logging.DEBUG, "Inserted ghostdata into DB!")
                 
-                with open(path, 'wb') as fi:
+                logger.log(logging.DEBUG, "Writing ghostdata to filesystem .... %s", userdir + '/' + fileid)
+                with open(userdir + '/' + fileid, 'wb') as fi:
                     fi.write(data)
+                logger.log(logging.DEBUG, "Written ghostdata to filesystem (%s bytes)", filesize)
             elif data is not None:
                 logger.log(logging.WARNING, "Tried to upload big file, rejected. (%s bytes)", filesize)
                 fileid = 0
@@ -766,25 +761,16 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
                 cursor = self.server.db.cursor()
                 cursor.execute('SELECT fileid FROM g1687_StoredGhostData WHERE profile = ? AND course = ?', (playerid, courseid))
-
-                logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Grabbing fileid from DB")
                 
                 try:
-                    fileid = cursor.fetchone()[0]
-                    userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
-                    path = userdir + '/' + str(fileid)
-
-                    logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Fetching file ... %s", path)
+                    userdir = 'usercontent/' + str(gameid) + '/ghostdata/'
+                    path = userdir + 'p' + str(playerid) + 'c' + str(courseid)
 
                     if os.path.exists(userdir):
-                        if os.path.isfile(path):
-                            with open(fileid, 'rb') as fi:
-                                ret = fi.read()
-                        else:
-                            logger.log(logging.ERROR, "User is trying to access file that should exist according to DB, but doesn't! (%s)", fileid)
-
+                        with open(path, 'rb') as fi:
+                            ret = fi.read()
                     else:
-                        logger.log(logging.ERROR, "Ghostdata directory for profile (%s) does not exist!", playerid)
+                        logger.log(logging.ERROR, "User is trying to access file that should exist according to DB, but doesn't! (%s)", path)
                 except:
                     logger.log(logging.WARNING, "User is trying to access non-existing file!")
                     ret = '1234' # apparently some games use the download command just to increment the "downloads" counter, and get the actual file from dls1
