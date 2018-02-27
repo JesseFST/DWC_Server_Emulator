@@ -643,7 +643,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             playerid = int(params['pid'][0])
             playerinfo = str(params['playerinfo'][0])
             
-            logger.log(logging.DEBUG, "SakeFileServer MKW GhostUpload Request for profile %s on course %s, in region %s, time %s", playerid, courseid, regionid, score)
+            logger.log(logging.DEBUG, "SakeFileServer MKW GhostUpload Request for profile %s on course %s, time %s", playerid, courseid, score)
             
             ctype, pdict = cgi.parse_header(self.headers['Content-Type'])
             multipart_data = self.rfile.read(int(self.headers.get('Content-Length', -1)))
@@ -665,7 +665,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 # Apparently the real Sake doesn't care about the gameid/playerid, just the fileid
                 # but for better categorization I think I'm still gonna leave folder-per-game/player thing
 
-                userdir = 'usercontent/' + str(gameid) + '/ghostdata/region-' + str(regionid) + '/' + str(playerid)
+                userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
                 if not os.path.exists(userdir):
                     os.makedirs(userdir)
                 
@@ -762,16 +762,16 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 courseid = int(params['c0'][0])
                 playerid = int(params['p0'][0])
 
-                logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request for profile %s on course %s, in region %s", playerid, courseid, regionid)
+                logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request for profile %s on course %s", playerid, courseid)
 
                 cursor = self.server.db.cursor()
-                cursor.execute('SELECT fileid FROM g1687_StoredGhostData WHERE profile = ? AND course = ? AND region = ?', (playerid, courseid, regionid))
+                cursor.execute('SELECT fileid FROM g1687_StoredGhostData WHERE profile = ? AND course = ?', (playerid, courseid))
 
                 logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Grabbing fileid from DB")
                 
                 try:
                     fileid = cursor.fetchone()[0]
-                    userdir = 'usercontent/' + str(gameid) + '/ghostdata/region-' + str(regionid) + '/' + str(playerid)
+                    userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
                     path = userdir + '/' + str(fileid)
 
                     logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Fetching file ... %s", path)
