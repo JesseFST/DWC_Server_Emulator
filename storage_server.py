@@ -98,9 +98,9 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
 			
         self.create_or_alter_table_if_not_exists(
             'g1687_StoredGhostData',
-            ['recordid', 'fileid', 'profile', 'region', 'gameid', 'course' ],
-            [PK,         'INT',    'INT',     'INT',    'INT',    'INT'    ],
-            ['int',      'int',    'int',     'int',    'int',    'int'    ])
+            ['recordid', 'fileid', 'gameid', 'profile', 'course', 'region', 'time' ],
+            [PK,         'INT',    'INT',     'INT',    'INT',    'INT',    'INT'    ],
+            ['int',      'int',    'int',     'int',    'int',    'int',    'int'    ])
 			
         self.create_or_alter_table_if_not_exists(
             'g1687_GhostData',
@@ -665,20 +665,20 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                 # Apparently the real Sake doesn't care about the gameid/playerid, just the fileid
                 # but for better categorization I think I'm still gonna leave folder-per-game/player thing
 
-                userdir = 'usercontent/' + str(gameid) + '/ghostdata/' + str(playerid)
+                userdir = 'usercontent/' + str(gameid) + '/ghostdata/region-' + str(regionid) + '/' + str(playerid)
                 if not os.path.exists(userdir):
                     os.makedirs(userdir)
                 
                 # insert into database
                 cursor = self.server.db.cursor()
-                cursor.execute('INSERT OR REPLACE INTO g1687_GhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
+                cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
                 
                 # get next fileid from database
                 fileid = cursor.lastrowid
 
                 # update fileid in database
                 path = userdir + '/' + str(fileid)
-                cursor.execute('UPDATE g1687_GhostData SET fileid = ? WHERE (profile = ? AND course = ?)', (fileid, playerid, courseid))
+                cursor.execute('UPDATE g1687_GhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
                 
                 with open(path, 'wb') as fi:
                     fi.write(data)
@@ -732,6 +732,59 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                             ret = fi.read()
                     else:
                         logger.log(logging.ERROR, "User is trying to access file that should exist according to DB, but doesn't! (%s)", filename)
+                except:
+                    logger.log(logging.WARNING, "User is trying to access non-existing file!")
+                    ret = '1234' # apparently some games use the download command just to increment the "downloads" counter, and get the actual file from dls1
+                    #retcode = 4
+
+            filelen = len(ret)
+            self.send_response(200)
+            self.send_header('Sake-File-Result', str(retcode))
+            self.send_header('Content-Type', 'text/html')
+            self.send_header('Content-Length', filelen)
+            self.end_headers()
+
+            logger.log(logging.DEBUG, "Returning download request with file of %s bytes", filelen)
+            
+            self.wfile.write(ret)
+
+        elif self.path.startswith("/SakeFileServer/ghostdownload.aspx?"):
+            params = urlparse.parse_qs(self.path[self.path.find('?')+1:])
+            retcode = 0
+            ret = ''
+
+            if 'p0' not in params or 'c0' not in params or 'gameid' not in params:
+                logger.log(logging.DEBUG, "Could not find expected parameters")
+                retcode = 3
+            else:
+                gameid = int(params['gameid'][0])
+                regionid = int(params['region'][0])
+                courseid = int(params['c0'][0])
+                playerid = int(params['p0'][0])
+
+                logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request for profile %s on course %s, in region %s", playerid, courseid, regionid)
+
+                cursor = self.server.db.cursor()
+                cursor.execute('SELECT fileid FROM g1687_StoredGhostData WHERE profile = ? AND course = ? AND region = ?', (playerid, courseid, regionid))
+
+                logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Grabbing fileid from DB")
+                
+                try:
+                    fileid = cursor.fetchone()[0]
+                    userdir = 'usercontent/' + str(gameid) + '/ghostdata/region-' + str(regionid) + '/' + str(playerid)
+                    path = userdir + '/' + str(fileid)
+
+                    logger.log(logging.DEBUG, "SakeFileServer MKW GhostDownload Request | Fetching file ... %s", path)
+
+                    if os.path.exists(userdir):
+                        if os.path.isfile(path):
+                            with open(fileid, 'rb') as fi:
+                                ret = fi.read()
+                        else:
+                            logger.log(logging.ERROR, "User is trying to access file that should exist according to DB, but doesn't! (%s)", fileid)
+
+                    else:
+                        logger.log(logging.ERROR, "Ghostdata directory for profile (%s) does not exist!", playerid)
                 except:
                     logger.log(logging.WARNING, "User is trying to access non-existing file!")
                     ret = '1234' # apparently some games use the download command just to increment the "downloads" counter, and get the actual file from dls1

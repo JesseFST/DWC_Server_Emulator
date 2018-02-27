@@ -111,7 +111,7 @@ class GamespyDatabase(object):
             # user id's will be ints, or all passwords will be ints, etc, despite not seeing any
             # evidence yet to say otherwise as far as Nintendo DS games go.
 
-            tx.nonquery("CREATE TABLE IF NOT EXISTS users (profileid INT, userid TEXT, password TEXT, gsbrcd TEXT, email TEXT, uniquenick TEXT, pid TEXT, lon TEXT, lat TEXT, loc TEXT, firstname TEXT, lastname TEXT, stat TEXT, partnerid TEXT, console INT, csnum TEXT, cfc TEXT, bssid TEXT, devname BLOB, birth TEXT, gameid TEXT, enabled INT, zipcode TEXT, aim TEXT)")
+            tx.nonquery("CREATE TABLE IF NOT EXISTS users (profileid INT, userid TEXT, password TEXT, gsbrcd TEXT, email TEXT, uniquenick TEXT, pid TEXT, lon TEXT, lat TEXT, loc TEXT, firstname TEXT, lastname TEXT, stat TEXT, partnerid TEXT, console INT, csnum TEXT, cfc TEXT, bssid TEXT, devname BLOB, birth TEXT, gameid TEXT, enabled INT, zipcode TEXT, aim TEXT, lastactive TEXT)")
             tx.nonquery("CREATE TABLE IF NOT EXISTS sessions (session TEXT, profileid INT, loginticket TEXT)")
             tx.nonquery("CREATE TABLE IF NOT EXISTS buddies (userProfileId INT, buddyProfileId INT, time INT, status INT, notified INT, gameid TEXT, blocked INT, openhost INT)")
             tx.nonquery("CREATE TABLE IF NOT EXISTS pending_messages (sourceid INT, targetid INT, msg TEXT)")
