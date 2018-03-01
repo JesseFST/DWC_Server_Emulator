@@ -166,7 +166,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         logger.log(logging.DEBUG, "login denied for banned Mii name "+str(post))
                         ret = {
                             "datetime": time.strftime("%Y%m%d%H%M%S"),
-                            "returncd": "3916",
+                            "returncd": "3918",
                             "locator": "gamespy.com",
                             "retry": "1",
                             "reason": "Mii name is black listed"
@@ -175,7 +175,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         logger.log(logging.DEBUG, "login denied for banned device name "+str(post))
                         ret = {
                             "datetime": time.strftime("%Y%m%d%H%M%S"),
-                            "returncd": "3916",
+                            "returncd": "3918",
                             "locator": "gamespy.com",
                             "retry": "1",
                             "reason": "device name is black listed"
@@ -192,7 +192,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         logger.log(logging.DEBUG, "Login denied - console pending "+str(post))
                         ret = {
                             "datetime": time.strftime("%Y%m%d%H%M%S"),
-                            "returncd": "2222",
+                            "returncd": "3913",
                             "locator": "gamespy.com",
                             "retry": "1",
                         }
@@ -208,7 +208,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                         logger.log(logging.DEBUG, "Login denied - game not supported! "+str(post))
                         ret = {
                             "datetime": time.strftime("%Y%m%d%H%M%S"),
-                            "returncd": "3800",
+                            "returncd": "3922",
                             "locator": "gamespy.com",
                             "retry": "1",
                         }

@@ -565,7 +565,7 @@ class GamespyDatabase(object):
 
         # status == 0 -> not authorized
         with Transaction(self.conn) as tx:
-            tx.nonquery("INSERT INTO buddies VALUES (?, ?, ?, ?, ?, ?, ?)", (userProfileId, buddyProfileId, now, 0, 0, "", 0))
+            tx.nonquery("INSERT INTO buddies VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (userProfileId, buddyProfileId, now, 0, 0, "", 0, 0))
 
     def auth_buddy(self, userProfileId, buddyProfileId):
         # status == 1 -> authorized
