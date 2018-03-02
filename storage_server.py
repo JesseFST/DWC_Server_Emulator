@@ -656,14 +656,15 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
             
             # make sure users don't upload huge files, dunno what an actual sensible maximum is
             # but 64 KB seems reasonable for what I've seen in WarioWare
-            if data is not None and filesize <= 65536:
+            # additionally check for possibly cheaty (or in general too low) score
+            if data is not None and filesize <= 65536 and score >= 50000:
                 # Apparently the real Sake doesn't care about the gameid/playerid, just the fileid
                 # but for better categorization I think I'm still gonna leave folder-per-game/player thing
 
                 userdir = 'usercontent/' + str(gameid) + '/ghostdata'
                 if not os.path.exists(userdir):
                     os.makedirs(userdir)
-                
+
                 # insert into database
                 cursor = self.server.db.cursor()
                 cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
