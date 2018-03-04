@@ -337,7 +337,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
         # ability to return the exact format that I want.
         # (Or make any kind of sense in case of ZSI...)
         
-        if self.path == "/SakeStorageServer/StorageServer.asmx":
+        if self.path == "/SakeStorageServer/StorageServer.asmx" or self.path == "/SakeStorageServer/StorageServer.aspx":
             length = int(self.headers.get('content-length', -1))
             action = self.headers['SOAPAction']
             post = self.rfile.read(length)
