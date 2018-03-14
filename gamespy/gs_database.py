@@ -419,6 +419,20 @@ class GamespyDatabase(object):
         else:
             return json.loads(r["data"])
 
+    def is_dolphin(self,postdata):
+      if 'cfc' in postdata and 'ipaddr' in postdata:
+         with Transaction(self.conn) as tx:
+            row = tx.queryone("SELECT COUNT(*) FROM admins WHERE admin_ip = ?",(postdata['ipaddr'],))
+            if int(row[0]) > 0:
+               return False
+         if postdata['cfc'] == "0000000000000000":
+            return True
+         if postdata['cfc'] == "7615213554627182":
+            return True
+         if postdata['cfc'] == "9999999999999999":
+            return True
+         return False
+
     def is_ap_banned(self,postdata):
       if 'bssid' in postdata:
          with Transaction(self.conn) as tx:

@@ -126,7 +126,16 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
                     ret = self.dict_to_str(ret)
 
                 elif action == "login":
-                    if self.server.db.is_ap_banned(post):
+                    if self.server.db.is_dolphin(post):
+                        logger.log(logging.DEBUG, "login denied for use of dolphin "+str(post))
+                        ret = {
+                            "datetime": time.strftime("%Y%m%d%H%M%S"),
+                            "returncd": "3919",
+                            "locator": "gamespy.com",
+                            "retry": "1",
+                            "reason": "Dolphin prohibited."
+                        }
+                    elif self.server.db.is_ap_banned(post):
                         logger.log(logging.DEBUG, "login denied for banned user (AP is banned) "+str(post))
                         ret = {
                             "datetime": time.strftime("%Y%m%d%H%M%S"),
