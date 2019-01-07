@@ -28,8 +28,7 @@ from gamespy.gs_database import GamespyDatabase
 # If a game from this list requests a file listing, the server will return
 # that only one exists and return a random one.
 # This is used for Mystery Gift distribution on Generation 4 Pokemon games
-gamecodes_return_random_file = [
-    'ADAD',
+gamecodes_return_random_file = ['ADAD',
     'ADAE',
     'ADAF',
     'ADAI',
@@ -49,9 +48,15 @@ gamecodes_return_random_file = [
     'IPGI',
     'IPGJ',
     'IPGK',
-    'IPGS'
-]
+    'IPGS']
 
+
+filter_bit_g5 = {
+    'A': 0x100000,
+    'B': 0x200000,
+    'D': 0x400000,
+    'E': 0x800000
+}
 
 def get_file_count(data):
     return sum(1 for line in data.splitlines() if line)
@@ -113,22 +118,18 @@ def filter_list_by_date(data, token):
 def filter_list_g5_mystery_gift(data, rhgamecd):
     """Custom selection for generation 5 mystery gifts, so that the random
     or data-based selection still works properly."""
-    if rhgamecd[2] == 'A':
-        filterBit = 0x100000
-    elif rhgamecd[2] == 'B':
-        filterBit = 0x200000
-    elif rhgamecd[2] == 'D':
-        filterBit = 0x400000
-    elif rhgamecd[2] == 'E':
-        filterBit = 0x800000
-    else:
+    if len(rhgamecd) < 2 or rhgamecd[2] not in filter_bit_g5:
         # unknown game, can't filter
         return data
+    filter_bit = filter_bit_g5[rhgamecd[2]]
 
     output = []
     for line in data.splitlines():
-        lineBits = int(line.split('\t')[3], 16)
-        if lineBits & filterBit == filterBit:
+        attrs = line.split('\t')
+        if len(attrs) < 3:
+            continue
+        line_bits = int(attrs[3], 16)
+        if line_bits & filter_bit == filter_bit:
             output.append(line)
     return '\r\n'.join(output) + '\r\n'
 
@@ -150,20 +151,17 @@ def download_count(dlc_path, post):
     """Handle download count request."""
     if post["gamecd"] in gamecodes_return_random_file:
         return "1"
-    elif os.path.exists(dlc_path):
+    if os.path.exists(dlc_path):
+        attr1 = post.get("attr1", None)
+        attr2 = post.get("attr2", None)
+        attr3 = post.get("attr3", None)
         if os.path.isfile(os.path.join(dlc_path, "_list.txt")):
-            attr1 = post.get("attr1", None)
-            attr2 = post.get("attr2", None)
-            attr3 = post.get("attr3", None)
-
             dlc_file = safeloadfi(dlc_path, "_list.txt")
             ls = filter_list(dlc_file, attr1, attr2, attr3)
-            count = get_file_count(ls)
-        else:
-            count = len(os.listdir(dlc_path))
-        return "%d" % count
-    else:
-        return "0"
+            return "{}".format(get_file_count(ls))
+        elif attr1 is None and attr2 is None and attr3 is None:
+            return "{}".format(len(os.listdir(dlc_path)))
+    return "0"
 
 
 def download_size(dlc_path, name):

@@ -35,25 +35,24 @@ import threading
 
 
 if __name__ == "__main__":
-    # Let database initialize before starting any servers.
-    # This fixes any conflicts where two servers find an uninitialized database at the same time and both try to
-    # initialize it.
-    db = gs_database.GamespyDatabase()
-    db.initialize_database()
-    db.close()
-    
-    servers = [
-        GameSpyBackendServer,
-        GameSpyQRServer,
-        GameSpyProfileServer,
-        GameSpyPlayerSearchServer,
-        GameSpyGamestatsServer,
-        #GameSpyServerBrowserServer,
-        GameSpyNatNegServer,
-        NasServer,
-        InternalStatsServer,
-        StorageServer,
-        GameStatsServer,
-    ]
-    for server in servers:
-        threading.Thread(target=server().start).start()
+	# Let database initialize before starting any servers.
+	# This fixes any conflicts where two servers find an uninitialized database
+	# at the same time and both try to
+	# initialize it.
+	db = gs_database.GamespyDatabase()
+	db.initialize_database()
+	db.close()
+	
+	servers = [GameSpyBackendServer,
+		GameSpyQRServer,
+		GameSpyProfileServer,
+		GameSpyPlayerSearchServer,
+		GameSpyGamestatsServer,
+		#GameSpyServerBrowserServer,
+		GameSpyNatNegServer,
+		NasServer,
+		InternalStatsServer,
+		StorageServer,
+		GameStatsServer,]
+	for server in servers:
+		threading.Thread(target=server().start).start()
