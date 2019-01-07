@@ -659,7 +659,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				# insert into database
 				cursor = self.server.db.cursor()
 				cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
-				fileid = 'p' + str(playerid) + 'c' + str(courseid)
+				fileid = 'p' + str(playerid) + 'c' + str(courseid) + '.rkg'
 
 				# update fileid in database
 				cursor.execute('UPDATE g1687_StoredGhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
@@ -756,7 +756,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				try:
 					time = cursor.fetchone()[0]
 					userdir = 'usercontent/' + str(gameid) + '/ghostdata/'
-					path = userdir + 'p' + str(playerid) + 'c' + str(courseid)
+					path = userdir + 'p' + str(playerid) + 'c' + str(courseid) + '.rkg'
 
 					if os.path.exists(userdir):
 						with open(path, 'rb') as fi:
