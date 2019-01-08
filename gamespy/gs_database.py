@@ -472,19 +472,28 @@ class GamespyDatabase(object):
 	# For example you can use https://mothereff.in/utf-8
 	def is_ingamesn_banned(self,postdata):
 		if 'words' in postdata:
-			their_name = unicode(postdata['words'], encoding='utf-8', errors='ignore')
+			if not isinstance(postdata["region"], unicode):
+				their_name = unicode(postdata['words'], 'utf-8', 'ignore')
+			else:
+				their_name = postdata['words']
 			logger.log(logging.DEBUG, "[words] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'ingamesn' in postdata:
-			their_name = unicode(postdata['ingamesn'], encoding='utf-8', errors='ignore')
+			if not isinstance(postdata["ingamesn"], unicode):
+				their_name = unicode(postdata['ingamesn'], 'utf-8', 'ignore')
+			else:
+				their_name = postdata['ingamesn']
 			logger.log(logging.DEBUG, "[ingamesn] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'devname' in postdata:
-			their_name = unicode(postdata['devname'], encoding='utf-8', errors='ignore')
+			if not isinstance(postdata["devname"], unicode):
+				their_name = unicode(postdata['devname'], 'utf-8', 'ignore')
+			else:
+				their_name = postdata['devname']
 			logger.log(logging.DEBUG, "[devname] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM devname_banned WHERE devname = ?",(their_name,))
@@ -589,12 +598,9 @@ class GamespyDatabase(object):
 			row = tx.queryone("SELECT * FROM nas_logins WHERE userid = ?", (userid,))
 			r = self.get_dict(row)
 
-		try:
-			if "region" in data:
-				data["region"] = unicode(data["region"], "utf-8", errors='ignore')
-		except TypeError:
-			regionId = data["region"]
-
+		if "region" in data:
+			if not isinstance(data["region"], unicode):
+				data["region"] = unicode(data["region"], 'utf-8', 'ignore')
 		if "devname" in data:
 			data["devname"] = gs_utils.base64_encode(data["devname"])
 		if "ingamesn" in data:
