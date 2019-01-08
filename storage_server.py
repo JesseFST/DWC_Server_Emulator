@@ -93,9 +93,9 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
 			['int',      'int',     'binaryData'])
 			
 		self.create_or_alter_table_if_not_exists('g1687_StoredGhostData',
-			['recordid', 'fileid',           'gameid',  'profile', 'course', 'region', 'time'],
-			[PK,         'TEXT',             'INT',     'INT',     'INT',    'INT',    'INT'],
-			['int',      'unicodeString',    'int',     'int',     'int',    'int',    'int'])
+			['recordid', 'fileid',           'gameid',  'profile', 'player_info',    'course', 'region', 'time'],
+			[PK,         'TEXT',             'INT',     'INT',     'TEXT',           'INT',    'INT',    'INT'],
+			['int',      'unicodeString',    'int',     'int',     'unicodeString',  'int',    'int',    'int'])
 
 		# WarioWare DIY
 		self.create_or_alter_table_if_not_exists('g2050_contest',
@@ -658,7 +658,8 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 				# insert into database
 				cursor = self.server.db.cursor()
-				cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, course, region, time) VALUES (?, ?, ?, ?, ?)', (gameid, playerid, courseid, regionid, score))
+				cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, player_info, course, region, time) VALUES (?, ?, ?, ?, ?, ?)', 
+				   (gameid, playerid, playerinfo, courseid, regionid, score))
 				fileid = 'p' + str(playerid) + 'c' + str(courseid) + '.rkg'
 
 				# update fileid in database

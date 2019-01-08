@@ -396,13 +396,13 @@ class PlayerSession(LineReceiver):
 
 
 	def perform_ka(self, data_parsed):
-		self.log(logging.INFO, "%s", "Received keepalive...")
+		self.log(logging.INFO, "%s" % "Received keepalive...")
 
 
 	def send_keepalive(self):
 		msg = gs_query.create_gamespy_message([('__cmd__', "ka"),
 			('__cmd_val__', ""),])
-		self.log(logging.INFO, "%s", "Sending keepalive...")
+		self.log(logging.INFO, "%s" % "Sending keepalive...")
 		self.transport.write(msg)
 
 

@@ -231,9 +231,9 @@ class GamespyDatabase(object):
 																						  # Crossing:
 																												# Wild
 																																	  # World)
-																																	  # all
-																																	  # use
-																																	  # \pid\11.
+																																				  # all
+																																							  # use
+																																										  # \pid\11.
 			lon = "0.000000"  # Always 0.000000?
 			lat = "0.000000"  # Always 0.000000?
 			loc = ""
@@ -442,9 +442,9 @@ class GamespyDatabase(object):
 			   return False
 		 if postdata['cfc'] == "0000000000000000":
 			return True
-		 if postdata['cfc'] == "7615213554627182":
+		 elif postdata['cfc'] == "7615213554627182":
 			return True
-		 if postdata['cfc'] == "9999999999999999":
+		 elif postdata['cfc'] == "9999999999999999":
 			return True
 		 return False
 
@@ -472,26 +472,25 @@ class GamespyDatabase(object):
 	# For example you can use https://mothereff.in/utf-8
 	def is_ingamesn_banned(self,postdata):
 		if 'words' in postdata:
+			their_name = unicode(postdata['words'], encoding='utf-8', errors='ignore')
+			logger.log(logging.DEBUG, "[words] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
-				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(postdata['ingamesn'],))
+				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
-		if 'ingamesn' in postdata:
+		elif 'ingamesn' in postdata:
+			their_name = unicode(postdata['ingamesn'], encoding='utf-8', errors='ignore')
+			logger.log(logging.DEBUG, "[ingamesn] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
-				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(postdata['ingamesn'],))
+				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
+				return int(row[0]) > 0
+		elif 'devname' in postdata:
+			their_name = unicode(postdata['devname'], encoding='utf-8', errors='ignore')
+			logger.log(logging.DEBUG, "[devname] Running name blacklist check for %s" % (their_name))
+			with Transaction(self.conn) as tx:
+				row = tx.queryone("SELECT COUNT(*) FROM devname_banned WHERE devname = ?",(their_name,))
 				return int(row[0]) > 0
 		else:
 			return False
-
-	# This is a hacky way to immitating Nintendo's name black listing system.
-	# In order to use this you will need a website that will decode utf-8
-	# For example you can use https://mothereff.in/utf-8
-	def is_devname_banned(self,postdata):
-	  if 'devname' in postdata:
-		 with Transaction(self.conn) as tx:
-			row = tx.queryone("SELECT COUNT(*) FROM devname_banned WHERE devname = ?",(postdata['devname'],))
-			return int(row[0]) > 0
-	  else:
-		 return False
 		
 	def console_register(self,postdata):
 	  if 'csnum' in postdata:
