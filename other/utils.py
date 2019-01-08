@@ -198,14 +198,14 @@ def __if_number_get_string(number):
 	return converted_str
 
 
-def get_unicode(strOrUnicode, encoding='utf-8'):
+def string_to_unicode(strOrUnicode, encoding='utf-8'):
 	strOrUnicode = __if_number_get_string(strOrUnicode)
 	if isinstance(strOrUnicode, unicode):
 		return strOrUnicode
 	return unicode(strOrUnicode, encoding, errors='ignore')
 
 
-def get_unicode_string(strOrUnicode, encoding='utf-8'):
+def unicode_to_string(strOrUnicode, encoding='utf-8'):
 	strOrUnicode = __if_number_get_string(strOrUnicode)
 	if isinstance(strOrUnicode, unicode):
 		return strOrUnicode.encode(encoding)

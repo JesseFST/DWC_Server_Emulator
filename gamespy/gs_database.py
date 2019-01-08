@@ -470,19 +470,19 @@ class GamespyDatabase(object):
 
 	def is_ingamesn_banned(self,postdata):
 		if 'words' in postdata:
-			their_name = utils.get_unicode_string(postdata["words"], 'utf-8')
+			their_name = utils.unicode_to_string(postdata["words"], 'utf-8')
 			logger.log(logging.DEBUG, "[words] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'ingamesn' in postdata:
-			their_name = utils.get_unicode_string(postdata["ingamesn"], 'utf-8')
+			their_name = utils.unicode_to_string(postdata["ingamesn"], 'utf-8')
 			logger.log(logging.DEBUG, "[ingamesn] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'devname' in postdata:
-			their_name = utils.get_unicode_string(postdata["devname"], 'utf-8')
+			their_name = utils.unicode_to_string(postdata["devname"], 'utf-8')
 			logger.log(logging.DEBUG, "[devname] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM devname_banned WHERE devname = ?",(their_name,))
@@ -588,7 +588,7 @@ class GamespyDatabase(object):
 			r = self.get_dict(row)
 
 		if "region" in data:
-			data["region"] = utils.get_unicode_string(data["region"], 'utf-8')
+			data["region"] = utils.unicode_to_string(data["region"], 'utf-8')
 		if "devname" in data:
 			data["devname"] = gs_utils.base64_encode(data["devname"])
 		if "ingamesn" in data:

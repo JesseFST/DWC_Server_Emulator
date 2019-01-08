@@ -224,7 +224,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					else:
 						challenge = utils.generate_random_str(8)
 						post["challenge"] = challenge
-						post["region"] = utils.get_unicode_string(post["region"], 'utf-8')
+						post["region"] = utils.unicode_to_string(post["region"], 'utf-8')
 
 						# abuse detection
 						if len(post["region"]) > 2:
