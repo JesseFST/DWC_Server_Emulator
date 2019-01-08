@@ -93,6 +93,7 @@ class GamespyDatabase(object):
 	def __init__(self, filename='gpcm.db'):
 		self.conn = sqlite3.connect(filename, timeout=10.0)
 		self.conn.row_factory = sqlite3.Row
+		self.conn.text_factory = str
 
 		#self.initialize_database()
 
@@ -467,33 +468,21 @@ class GamespyDatabase(object):
 	  else:
 		 return False
 
-	# This is a hacky way to immitating Nintendo's name black listing system.
-	# In order to use this you will need a website that will decode utf-8
-	# For example you can use https://mothereff.in/utf-8
 	def is_ingamesn_banned(self,postdata):
 		if 'words' in postdata:
-			if not isinstance(postdata["region"], unicode):
-				their_name = unicode(postdata['words'], 'utf-8', 'ignore')
-			else:
-				their_name = postdata['words']
+			their_name = utils.get_unicode_string(postdata["words"], 'utf-8')
 			logger.log(logging.DEBUG, "[words] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'ingamesn' in postdata:
-			if not isinstance(postdata["ingamesn"], unicode):
-				their_name = unicode(postdata['ingamesn'], 'utf-8', 'ignore')
-			else:
-				their_name = postdata['ingamesn']
+			their_name = utils.get_unicode_string(postdata["ingamesn"], 'utf-8')
 			logger.log(logging.DEBUG, "[ingamesn] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM ingamesn_banned WHERE ingamesn = ?",(their_name,))
 				return int(row[0]) > 0
 		elif 'devname' in postdata:
-			if not isinstance(postdata["devname"], unicode):
-				their_name = unicode(postdata['devname'], 'utf-8', 'ignore')
-			else:
-				their_name = postdata['devname']
+			their_name = utils.get_unicode_string(postdata["devname"], 'utf-8')
 			logger.log(logging.DEBUG, "[devname] Running name blacklist check for %s" % (their_name))
 			with Transaction(self.conn) as tx:
 				row = tx.queryone("SELECT COUNT(*) FROM devname_banned WHERE devname = ?",(their_name,))
@@ -599,8 +588,7 @@ class GamespyDatabase(object):
 			r = self.get_dict(row)
 
 		if "region" in data:
-			if not isinstance(data["region"], unicode):
-				data["region"] = unicode(data["region"], 'utf-8', 'ignore')
+			data["region"] = utils.get_unicode_string(data["region"], 'utf-8')
 		if "devname" in data:
 			data["devname"] = gs_utils.base64_encode(data["devname"])
 		if "ingamesn" in data:

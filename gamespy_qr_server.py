@@ -334,7 +334,11 @@ class GameSpyQRServer(object):
 					try:
 						profile = self.db.get_profile_from_profileid(k['dwc_pid'])
 						naslogin = self.db.get_nas_login_from_userid(profile['userid'])
-						self.sessions[session_id].ingamesn = str(naslogin['ingamesn']) # convert to string from unicode(which is just a base64 string anyway)
+						
+						if "ingamesn" in naslogin:
+							self.sessions[session_id].ingamesn = utils.get_unicode_string(naslogin['ingamesn']) # convert to string from unicode(which is just a base64 string anyway)
+						elif "words" in naslogin:
+							self.sessions[session_id].ingamesn = utils.get_unicode_string(naslogin['words']) # convert to string from unicode(which is just a base64 string anyway)
 					except Exception,e:
 						pass # If the game doesn't have, don't worry about it.
 
@@ -423,7 +427,7 @@ class GameSpyQRServer(object):
 		elif recv_data[0] == '\x07': # Client Message Ack
 			#self.log(logging.WARNING, address, session_id, "NOT IMPLEMENTED!
 												#Received client message ack from %s:%s...  %s" % (address[0],
-												#address[1], recv_data[5:]))
+                              												#address[1], recv_data[5:]))
 			self.log(logging.DEBUG, address, session_id, "Received client message ack from %s:%s..." % (address[0], address[1]))
 
 		elif recv_data[0] == '\x08': # Keep Alive
