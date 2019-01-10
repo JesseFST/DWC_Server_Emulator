@@ -38,6 +38,8 @@ logger = utils.create_logger(logger_name, logger_filename, -1, logger_output_to_
 #address = ("0.0.0.0", 80)
 address = ("127.0.0.1", 9002)
 
+CHALLENGE_CHARSET = string.ascii_letters + string.digits
+
 class GameStatsBase(object):
 	def do_GET(self, conn, key, append_hash, append_text=""):
 		try:
@@ -138,7 +140,7 @@ class GameStatsHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		if '/' in gameid:
 			gameid = gameid[:gameid.index('/')]
 
-		#logger.log(logging.DEBUG, "Request for '%s': %s", gameid, self.path)
+		logger.log(logging.DEBUG, "Request for '%s': %s", gameid, self.path)
 		if gameid in self.server.gamelist:
 			game = self.server.gamelist[gameid]['class']()
 			game.do_GET(self, self.server.gamelist[gameid]['key'])

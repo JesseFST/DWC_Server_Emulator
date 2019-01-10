@@ -77,6 +77,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.send_header("Server", "BigIP")
 			self.end_headers()
 			self.wfile.write("ok")
+			logger.log(logging.INFO, "Got connection test; It should pass.")
 		except:
 			logger.log(logging.ERROR, "Unknown exception: %s" % traceback.format_exc())
 
@@ -93,6 +94,40 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				client_address = self.client_address
 
 			post['ipaddr'] = client_address[0]
+
+			# Validate game headers
+			if "HTTP_X_GAMECD" in self.headers:
+				if len(self.headers.get('HTTP_X_GAMECD')) < 4 and len(self.headers.get('HTTP_X_GAMECD')) > 4:
+					logger.log(logging.DEBUG, "Header data invalid, denied access [got: HTTP_X_GAMECD: %s, len: %s]", self.headers.get('HTTP_X_GAMECD'), len(self.headers.get('HTTP_X_GAMECD')))
+					ret = {
+						"datetime": time.strftime("%Y%m%d%H%M%S"),
+						"returncd": "3921", 
+						"locator": "gamespy.com", 
+						"retry": "1",
+					}
+					self.send_header("Content-Length", str(len(ret)))
+					self.end_headers()
+					self.wfile.write(ret)
+					return
+				else:
+					logger.log(logging.DEBUG, "Header data VALID [got: HTTP_X_GAMECD: %s, len: %s]", self.headers.get('HTTP_X_GAMECD'), len(self.headers.get('HTTP_X_GAMECD')))
+
+			# Validate useragent
+			if "User-Agent" in self.headers:
+				if self.headers.get('User-Agent') != "RVL SDK/1.0":
+					logger.log(logging.DEBUG, "Header data invalid, denied access [got: User-Agent: %s]", self.headers.get('User-Agent'))
+					ret = {
+						"datetime": time.strftime("%Y%m%d%H%M%S"),
+						"returncd": "3921", 
+						"locator": "gamespy.com", 
+						"retry": "1",
+					}
+					self.send_header("Content-Length", str(len(ret)))
+					self.end_headers()
+					self.wfile.write(ret)
+					return
+				else:
+					logger.log(logging.DEBUG, "Header data VALID [got: User-Agent: %s]", self.headers.get('User-Agent'))
 
 			if self.path == "/ac":
 				logger.log(logging.DEBUG, "Request to %s from %s", self.path, client_address)
@@ -224,7 +259,6 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 					else:
 						challenge = utils.generate_random_str(8)
 						post["challenge"] = challenge
-						post["region"] = utils.unicode_to_string(post["region"], 'utf-8')
 
 						# abuse detection
 						if len(post["region"]) > 2:

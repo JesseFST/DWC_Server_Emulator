@@ -227,14 +227,8 @@ class GamespyDatabase(object):
 
 			pid = "11"  # Always 11???  Is this important?  Not to be confused with dwc_pid.
 						# The three games I found it in (Tetris DS, Advance
-											  # Wars - Days of Ruin, and
-																	# Animal
-																						  # Crossing:
-																												# Wild
-																																	  # World)
-																																				  # all
-																																							  # use
-																																										  # \pid\11.
+						# Wars - Days of Ruin, and Animal Crossing: Wild World)
+                        # all use \pid\11.
 			lon = "0.000000"  # Always 0.000000?
 			lat = "0.000000"  # Always 0.000000?
 			loc = ""

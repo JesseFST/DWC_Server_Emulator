@@ -36,7 +36,7 @@ logger_name = "StorageServer"
 logger_filename = "storage_server.log"
 logger = utils.create_logger(logger_name, logger_filename, -1, logger_output_to_console, logger_output_to_file)
 
-# Paths to ProxyPass: /SakeStorageServer, /SakeFileServer
+# Paths to ProxyPass: /SakeStorageServer, /SakeFileServer, /RaceService
 address = ("0.0.0.0", 8000)
 
 def escape_xml(s):
@@ -91,6 +91,12 @@ class StorageHTTPServer(BaseHTTPServer.HTTPServer):
 			['recordid', 'ownerid', 'info'],
 			[PK,         'INT',     'TEXT'],
 			['int',      'int',     'binaryData'])
+			
+        # Don't know why, but MKW requests 2 different 'GhostData' tables
+		self.create_or_alter_table_if_not_exists('g1687_GhostData',
+			['recordid', 'fileid',           'gameid',  'profile', 'player_info',    'course', 'region', 'time'],
+			[PK,         'TEXT',             'INT',     'INT',     'TEXT',           'INT',    'INT',    'INT'],
+			['int',      'unicodeString',    'int',     'int',     'unicodeString',  'int',    'int',    'int'])
 			
 		self.create_or_alter_table_if_not_exists('g1687_StoredGhostData',
 			['recordid', 'fileid',           'gameid',  'profile', 'player_info',    'course', 'region', 'time'],
@@ -309,13 +315,52 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 		return statement, where_appended
 
 	def do_POST(self):
+		# Validate useragent
+		if "User-Agent" in self.headers:
+			if self.headers.get('User-Agent') != "GameSpyHTTP/1.0":
+				logger.log(logging.DEBUG, "Header data invalid, denied access [got: User-Agent: %s]", self.headers.get('User-Agent'))
+				ret = {
+					"datetime": time.strftime("%Y%m%d%H%M%S"),
+					"returncd": "3921", 
+					"locator": "gamespy.com", 
+					"retry": "1",
+				}
+				self.send_header("Content-Length", str(len(ret)))
+				self.end_headers()
+				self.wfile.write(ret)
+				return
+			else:
+				logger.log(logging.DEBUG, "Header data VALID [got: User-Agent: %s]", self.headers.get('User-Agent'))
+
 		# Alright, in case anyone is wondering: Yes, I am faking a SOAP service
 		# instead of using an actual one.  That's because I've tried to do this
 		# with several actual python SOAP services and none of them give me the
 		# ability to return the exact format that I want.
 		# (Or make any kind of sense in case of ZSI...)
-		
-		if self.path == "/SakeStorageServer/StorageServer.asmx" or self.path == "/SakeStorageServer/StorageServer.aspx":
+		if self.path == "/RaceService/NintendoRacingService.asmx":
+			length = int(self.headers.get('content-length', -1))
+			action = self.headers['SOAPAction']
+			post = self.rfile.read(length)
+			logger.log(logging.DEBUG, "SakeStorageServer SOAPAction %s", action)
+			logger.log(logging.DEBUG, post)
+			
+			shortaction = action[action.rfind('/') + 1:-1]
+
+			if shortaction == 'GetTopTenRankings':
+                # TODO : Pull actual data instead of using this static data
+				ret = '<?xml version="1.0" encoding="utf-8"?><RankingDataResponse xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://gamespy.net/RaceService/"><responseCode>0</responseCode><dataArray><numrecords>1</numrecords><data><RankingData><ownerid>20</ownerid><rank>1</rank><time>117048</time><userdata>peQARABhAGQAAAAAAAAAAAAAAAAAAF08hhfV9sKBokYixG4AYX0IkoCMqEBjSbhtcIrwqiUEAAAAAAAAAAAAAAAAAAAAAAAAAACZXgMJFwA=</userdata></RankingData></data></dataArray></RankingDataResponse>'
+				
+				self.send_response(200)
+				self.send_header('Content-Type', 'text/xml; charset=utf-8')
+				self.end_headers()
+				
+				logger.log(logging.DEBUG, "RaceService: %s response to %s", action, self.client_address)
+
+                # DEBUG
+				#logger.log(logging.DEBUG, ret)
+				self.wfile.write(ret)
+
+		elif self.path == "/SakeStorageServer/StorageServer.asmx" or self.path == "/SakeStorageServer/StorageServer.aspx":
 			length = int(self.headers.get('content-length', -1))
 			action = self.headers['SOAPAction']
 			post = self.rfile.read(length)
@@ -375,6 +420,13 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 						statement += ' ( '
 						statement += ' OR '.join('ownerid = ' + str(int(oid.firstChild.data)) for oid in oids)
 						statement += ' ) '
+						logger.log(logging.WARNING, "Line 420")
+
+					# In the case where ownerids is not present (ex: MKW ghost data), grab a
+					# random profile
+					else:
+						logger.log(logging.WARNING, "Trying to pull random ghost data.  This isn't implemented yet. [%s]", str(post))
+
 
 				elif shortaction == 'GetMyRecords':
 					profileid = self.server.gamespydb.get_profileid_from_loginticket(loginticket)
@@ -544,10 +596,28 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.end_headers()
 			
 			logger.log(logging.DEBUG, "%s response to %s", action, self.client_address)
+            # DEBUG
 			#logger.log(logging.DEBUG, ret)
 			self.wfile.write(ret)
 		
 		elif self.path.startswith("/SakeFileServer/upload.aspx?"):
+			# Validate useragent
+			if "User-Agent" in self.headers:
+				if self.headers.get('User-Agent') != "GameSpyHTTP/1.0":
+					logger.log(logging.DEBUG, "Header data invalid, denied access [got: User-Agent: %s]", self.headers.get('User-Agent'))
+					ret = {
+						"datetime": time.strftime("%Y%m%d%H%M%S"),
+						"returncd": "3921",
+						"locator": "gamespy.com",
+						"retry": "1",
+					}
+					self.send_header("Content-Length", str(len(ret)))
+					self.end_headers()
+					self.wfile.write(ret)
+					return
+				else:
+					logger.log(logging.DEBUG, "Header data VALID [got: User-Agent: %s]", self.headers.get('User-Agent'))
+
 			retcode = 0
 			params = urlparse.parse_qs(self.path[self.path.find('?') + 1:])
 
@@ -646,28 +716,34 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			# but 64 KB seems reasonable for what I've seen in WarioWare
 			# additionally check for possibly cheaty (or in general too low)
 			# score
-			if data is not None and filesize <= 65536 and score >= 50000:
+			if data is not None and filesize <= 65536:
 				# Apparently the real Sake doesn't care about the
 				# gameid/playerid, just the fileid
 				# but for better categorization I think I'm still gonna leave
 				# folder-per-game/player thing
 
-				userdir = 'usercontent/' + str(gameid) + '/ghostdata'
-				if not os.path.exists(userdir):
-					os.makedirs(userdir)
+				if score >= 40000:
+					userdir = 'usercontent/' + str(gameid) + '/ghostdata'
+					if not os.path.exists(userdir):
+						os.makedirs(userdir)
+						
+					# insert into database
+					cursor = self.server.db.cursor()
+					cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, player_info, course, region, time) VALUES (?, ?, ?, ?, ?, ?)', 
+								   (gameid, playerid, playerinfo, courseid, regionid, score))
+					fileid = 'p' + str(playerid) + 'c' + str(courseid) + '.rkg'
+					
+					# update fileid in database
+					cursor.execute('UPDATE g1687_StoredGhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
+					self.server.db.commit()
+					
+					with open(userdir + '/' + fileid, 'wb') as fi:
+						fi.write(data)
 
-				# insert into database
-				cursor = self.server.db.cursor()
-				cursor.execute('INSERT OR REPLACE INTO g1687_StoredGhostData (gameid, profile, player_info, course, region, time) VALUES (?, ?, ?, ?, ?, ?)', 
-				   (gameid, playerid, playerinfo, courseid, regionid, score))
-				fileid = 'p' + str(playerid) + 'c' + str(courseid) + '.rkg'
-
-				# update fileid in database
-				cursor.execute('UPDATE g1687_StoredGhostData SET fileid = ? WHERE profile = ? AND course = ? AND region = ?', (fileid, playerid, courseid, regionid))
-				self.server.db.commit()
-				
-				with open(userdir + '/' + fileid, 'wb') as fi:
-					fi.write(data)
+				else:
+					logger.log(logging.WARNING, "MKW Ghost score is too low: %s", score)
+					fileid = 0
+					retcode = 4
 			elif data is not None:
 				logger.log(logging.WARNING, "Tried to upload big file, rejected. (%s bytes)", filesize)
 				fileid = 0
@@ -675,7 +751,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			else:
 				logger.log(logging.ERROR, "Failed to read data")
 				fileid = 0
-				retcode = 1
+				retcode = 3
 
 			self.send_response(200)
 
@@ -689,7 +765,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 			self.wfile.write('')
 
 		else:
-			logger.log(logging.INFO, "[NOT IMPLEMENTED] Got POST request %s from %s", self.path, self.client_address)
+			logger.log(logging.INFO, "[NOT IMPLEMENTED] Got POST request %s from %s [%s]", self.path, self.client_address, str(post))
 
 	def do_GET(self):
 		if self.path.startswith("/SakeFileServer/download.aspx?"):
@@ -767,13 +843,18 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				except:
 					logger.log(logging.WARNING, "User is trying to access non-existing file!")
 					ret = '1234' # apparently some games use the download command just to increment the
-								 # "downloads" counter, and get the actual file from dls1
+					# "downloads" counter, and get the actual file from dls1
 					#retcode = 4
 
 			filelen = len(ret)
 			self.send_response(200)
+			self.send_header('cluster-server', 'gstprdweb07')
+			self.send_header('Server', 'Microsoft-ISS/8.5')
+			self.send_header('X-AspNet-Version', '4.0.30319') # Original value: 2.0.50727
+			self.send_header('X-Powered-By', 'ASP.NET')
+			self.send_header('Content-Disposition', 'attachment; filename=ghost.bin')
 			self.send_header('Sake-File-Result', str(retcode))
-			self.send_header('Content-Type', 'text/html')
+			self.send_header('Content-Type', 'application/octet-stream')
 			self.send_header('Content-Length', filelen)
 			self.end_headers()
 
@@ -783,6 +864,7 @@ class StorageHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 		else:
 			logger.log(logging.INFO, "[NOT IMPLEMENTED] Got GET request %s from %s", self.path, self.client_address)
+
 
 
 if __name__ == "__main__":
