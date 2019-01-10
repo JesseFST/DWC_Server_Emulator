@@ -114,7 +114,7 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 
 			# Validate useragent
 			if "User-Agent" in self.headers:
-				if self.headers.get('User-Agent') != "RVL SDK/1.0":
+				if self.headers.get('User-Agent') != "RVL SDK/1.0" or self.headers.get('User-Agent') != "Nitro WiFi SDK/5.3":
 					logger.log(logging.DEBUG, "Header data invalid, denied access [got: User-Agent: %s]", self.headers.get('User-Agent'))
 					ret = {
 						"datetime": time.strftime("%Y%m%d%H%M%S"),
