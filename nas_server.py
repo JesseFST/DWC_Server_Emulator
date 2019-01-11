@@ -112,23 +112,6 @@ class NasHTTPServerHandler(BaseHTTPServer.BaseHTTPRequestHandler):
 				else:
 					logger.log(logging.DEBUG, "Header data VALID [got: HTTP_X_GAMECD: %s, len: %s]", self.headers.get('HTTP_X_GAMECD'), len(self.headers.get('HTTP_X_GAMECD')))
 
-			# Validate useragent
-			if "User-Agent" in self.headers:
-				if self.headers.get('User-Agent') != "RVL SDK/1.0" or self.headers.get('User-Agent') != "Nitro WiFi SDK/5.3":
-					logger.log(logging.DEBUG, "Header data invalid, denied access [got: User-Agent: %s]", self.headers.get('User-Agent'))
-					ret = {
-						"datetime": time.strftime("%Y%m%d%H%M%S"),
-						"returncd": "3921", 
-						"locator": "gamespy.com", 
-						"retry": "1",
-					}
-					self.send_header("Content-Length", str(len(ret)))
-					self.end_headers()
-					self.wfile.write(ret)
-					return
-				else:
-					logger.log(logging.DEBUG, "Header data VALID [got: User-Agent: %s]", self.headers.get('User-Agent'))
-
 			if self.path == "/ac":
 				logger.log(logging.DEBUG, "Request to %s from %s", self.path, client_address)
 				logger.log(logging.DEBUG, post)
